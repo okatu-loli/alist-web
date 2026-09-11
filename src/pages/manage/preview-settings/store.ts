@@ -7,7 +7,7 @@ import {
   type PreviewSettingsMap,
 } from "~/store"
 import type { PreviewOverride } from "~/store/settings"
-import { ObjType } from "~/types"
+import { Group, ObjType, type SettingItem } from "~/types"
 import {
   handleRespWithoutAuth,
   handleRespWithoutAuthAndNotify,
@@ -68,13 +68,33 @@ const typeSettingKey = (type?: ObjType): string | null => {
   }
 }
 
+// video_types/audio_types/image_types/text_types are PRIVATE settings and
+// absent from /public/settings, so the admin page loads them itself.
+const [typeSettings, setTypeSettings] = createSignal<Record<string, string>>({})
+
+export const loadTypeSettings = async (): Promise<void> => {
+  const resp = (await r.get(`/admin/setting/list?group=${Group.PREVIEW}`)) as {
+    code: number
+    data: SettingItem[]
+    message: string
+  }
+  handleRespWithoutAuthAndNotify(resp, (data) => {
+    const next: Record<string, string> = {}
+    data
+      .filter((i) => i.key.endsWith("_types"))
+      .forEach((i) => (next[i.key] = i.value))
+    setTypeSettings(next)
+    bumpPreviewSettingsVersion((v) => v + 1)
+  })
+}
+
 const typeMatchesExtension = (
   type: ObjType | undefined,
   ext: string,
 ): boolean => {
   const key = typeSettingKey(type)
   if (!key) return false
-  return getSetting(key)
+  return (typeSettings()[key] ?? getSetting(key))
     .split(",")
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean)

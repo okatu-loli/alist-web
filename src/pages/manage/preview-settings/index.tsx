@@ -25,6 +25,7 @@ import {
   buildRowsForExtension,
   copyExtensionConfigTo,
   deleteIframeEntry,
+  loadTypeSettings,
   previewSettingsVersion,
   reorderRow,
   setAllForExtension,
@@ -63,6 +64,7 @@ const PreviewSettings = () => {
 
   const reportError = (e: unknown) =>
     notify.error(e instanceof Error ? e.message : String(e))
+  loadTypeSettings().catch(reportError)
 
   const openAdd = () => setEditing({ name: "", url: "" })
   const openEdit = (name: string, url?: string) =>
